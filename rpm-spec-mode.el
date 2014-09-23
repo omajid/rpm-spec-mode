@@ -879,6 +879,7 @@ controls whether case is significant."
    (getenv "rpm")
    (if (file-directory-p "~/rpm") "~/rpm/")
    (if (file-directory-p "~/RPM") "~/RPM/")
+   (if (file-directory-p "~/rpmbuild") "~/rpmbuild/")
    (if (file-directory-p "/usr/src/redhat/") "/usr/src/redhat/")
    "/usr/src/RPM"))
 
