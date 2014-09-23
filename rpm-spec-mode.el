@@ -229,6 +229,11 @@ value returned by function `user-mail-address'."
   :type 'boolean
   :group 'rpm-spec)
 
+(defcustom rpm-spec-prefer-local-tools t
+  "Prefer to use local tools for manipulating rpms."
+  :type 'boolean
+  :group 'rpm-spec)
+
 (defgroup rpm-spec-faces nil
   "Font lock faces for `rpm-spec-mode'."
   :prefix "rpm-spec-"
@@ -766,13 +771,11 @@ If `rpm-change-log-uses-utc' is nil, \"today\" means the local time zone."
 (defun rpm-spec-goto-add-change-log-header ()
   "Find change log and add header (if needed) for today"
     (rpm-spec-goto-section "changelog")
-    (let* ((address (rpm-spec-user-mail-address))
-           (fullname (or rpm-spec-user-full-name (user-full-name)))
-           (system-time-locale "C")
+    (let* ((system-time-locale "C")
            (string (concat "* " (rpm-spec-change-log-date-string) " "
-                           fullname " <" address ">"
+                           (rpm-spec--user-name-email)
                            (and rpm-spec-insert-changelog-version
-                                (concat " - " (rpm-spec-find-spec-version t))))))
+                                (concat " - " (rpm-spec--find-spec-version t))))))
       (if (not (search-forward string nil t))
           (insert "\n" string "\n")
         (forward-line 2))))
@@ -964,8 +967,7 @@ controls whether case is significant."
   "Insert Packager tag."
   (interactive "p")
   (beginning-of-line)
-  (insert "Packager: " (or rpm-spec-user-full-name (user-full-name))
-          " <" (rpm-spec-user-mail-address) ">\n"))
+  (insert "Packager: " (rpm-spec--user-name-email) "\n"))
 
 (defun rpm-spec-change-packager (&optional arg)
   "Update Packager tag."
@@ -1361,7 +1363,32 @@ See `search-forward-regexp'."
           str))
       (error nil))))
 
-(defun rpm-spec-find-spec-version (&optional with-epoch)
+(defun rpm-spec--find-spec-version (&optional with-epoch)
+  "Get the version string."
+  (if (and rpm-spec-prefer-local-tools (executable-find "rpmspec"))
+      (rpm-spec--find-spec-version-using-rpmspec)
+    (rpm-spec--find-spec-version-manually)))
+
+(defun rpm-spec--find-spec-version-using-rpmspec (&optional with-epoch)
+  "Get the version string, using `rpmspec'.
+
+If WITH-EPOCH is non--nil, the string contains the Epoch value."
+  (let* ((marker "END-OF-OUTPUT")
+         (file (buffer-file-name))
+         (text (shell-command-to-string
+                (string-join
+                 (list
+                  (if with-epoch
+                      "rpmspec -q  --qf \"%{epoch}:%{version}-%{release}END-OF-OUTPUT\n\" "
+                    "rpmspec -q --qf \"%{version}-%{release}END-OF-OUTPUT\n\" ")
+                  file)))))
+    (with-temp-buffer
+      (insert text)
+      (goto-char (point-min))
+      (re-search-forward marker)
+      (buffer-substring (point-min) (- (point) (length marker))))))
+
+(defun rpm-spec--find-spec-version-manually (&optional with-epoch)
   "Get the version string.
 If WITH-EPOCH is non-nil, the string contains the Epoch/Serial value,
 if one is present in the file."
@@ -1468,6 +1495,20 @@ if one is present in the file."
     (rpm-spec-add-change-log-entry "Initial build.")))
 
 ;;------------------------------------------------------------
+
+(defun rpm-spec--user-name-email ()
+  "Return the user name and email address."
+  (defsubst string-trim-right (string)
+    "Remove trailing whitespace from STRING."
+    (if (string-match "[ \t\n\r]+\\'" string)
+        (replace-match "" t t string)
+        string))
+  (if (and rpm-spec-prefer-local-tools
+           (executable-find "rpmdev-packager"))
+      (string-trim-right (shell-command-to-string "rpmdev-packager"))
+    (let ((address (rpm-spec-user-mail-address))
+          (fullname (or rpm-spec-user-full-name (user-full-name))))
+      (string-join (list fullname "<" address ">")))))
 
 (defun rpm-spec-user-mail-address ()
   "User mail address helper."
