@@ -1376,12 +1376,13 @@ If WITH-EPOCH is non--nil, the string contains the Epoch value."
   (let* ((marker "END-OF-OUTPUT")
          (file (buffer-file-name))
          (text (shell-command-to-string
-                (string-join
-                 (list
-                  (if with-epoch
-                      "rpmspec -q  --qf \"%{epoch}:%{version}-%{release}END-OF-OUTPUT\n\" "
-                    "rpmspec -q --qf \"%{version}-%{release}END-OF-OUTPUT\n\" ")
-                  file)))))
+                (concat
+                 "rpmspec -q  --qf \""
+                 (if with-epoch "%{epoch}:")
+                 "%{version}-%{release}"
+                 marker "\n\""
+                 " "
+                 file))))
     (with-temp-buffer
       (insert text)
       (goto-char (point-min))
@@ -1444,10 +1445,9 @@ if one is present in the file."
 (defun rpm-spec--spec-initialize-from-rpmdev ()
   "Use rpmdev to initialize the new spec file."
   (shell-command-to-string
-   (string-join (list
-                 "rpmdev-newspec"
-                 (rpm-spec--buffer-file-name))
-                " "))
+   (concat "rpmdev-newspec"
+           " "
+           (rpm-spec--buffer-file-name)))
   (revert-buffer t t t))
 
 (defun rpm-spec--spec-initialize-manually ()
@@ -1527,7 +1527,7 @@ if one is present in the file."
       (string-trim-right (shell-command-to-string "rpmdev-packager"))
     (let ((address (rpm-spec-user-mail-address))
           (fullname (or rpm-spec-user-full-name (user-full-name))))
-      (string-join (list fullname "<" address ">")))))
+      (concat fullname " <" address ">"))))
 
 (defun rpm-spec-user-mail-address ()
   "User mail address helper."
