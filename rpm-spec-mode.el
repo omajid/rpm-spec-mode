@@ -706,6 +706,7 @@ with no args, if that value is non-nil."
   (easy-menu-define rpm-spec-call-menu rpm-spec-mode-map
                     "Post menu for `rpm-spec-mode'." rpm-spec-mode-menu)
   (easy-menu-add rpm-spec-mode-menu)
+  (rpm-spec--initialize-imenu)
 
   (if (and (= (buffer-size) 0) rpm-spec-initialize-sections)
       (run-hooks 'rpm-spec-mode-new-file-hook))
@@ -1051,6 +1052,13 @@ leave point at previous location."
          (or (re-search-forward (concat "^%" section "\\b") nil t)
              (and (re-search-forward "^%files\\b" nil t) (forward-line -1))
              (goto-char (point-max))))))
+
+(defun rpm-spec--initialize-imenu ()
+  (setq imenu-generic-expression
+        `(("Sections"
+           ,(concat "^%" (regexp-opt rpm-spec-sections) ".*$") 0)
+          ("Scripts"
+           ,(concat "^%" (regexp-opt rpm-spec-scripts) ".*$") 0))))
 
 (defun rpm-spec-insert-true-prefix ()
   (interactive)
