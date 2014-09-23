@@ -1498,11 +1498,12 @@ if one is present in the file."
 
 (defun rpm-spec--user-name-email ()
   "Return the user name and email address."
-  (defsubst string-trim-right (string)
-    "Remove trailing whitespace from STRING."
-    (if (string-match "[ \t\n\r]+\\'" string)
-        (replace-match "" t t string)
-        string))
+  (unless (fboundp 'string-trim-right)
+    (defsubst string-trim-right (string)
+      "Remove trailing whitespace from STRING."
+      (if (string-match "[ \t\n\r]+\\'" string)
+          (replace-match "" t t string)
+        string)))
   (if (and rpm-spec-prefer-local-tools
            (executable-find "rpmdev-packager"))
       (string-trim-right (shell-command-to-string "rpmdev-packager"))
