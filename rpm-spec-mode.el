@@ -1431,11 +1431,29 @@ if one is present in the file."
 ;;------------------------------------------------------------
 
 (defun rpm-spec-spec-initialize ()
+  "Create a default spec file."
+  (if (and rpm-spec-prefer-local-tools (executable-find "rpmdev-newspec"))
+      (rpm-spec--spec-initialize-from-rpmdev)
+    (rpm-spec--spec-initialize-manually)))
+
+(defun rpm-spec--buffer-file-name ()
+  (if (buffer-file-name)
+      (file-name-nondirectory (buffer-file-name))
+    (buffer-name)))
+
+(defun rpm-spec--spec-initialize-from-rpmdev ()
+  "Use rpmdev to initialize the new spec file."
+  (shell-command-to-string
+   (string-join (list
+                 "rpmdev-newspec"
+                 (rpm-spec--buffer-file-name))
+                " "))
+  (revert-buffer t t t))
+
+(defun rpm-spec--spec-initialize-manually ()
   "Create a default spec file if one does not exist or is empty."
   (let (file name version (release rpm-spec-default-release))
-    (setq file (if (buffer-file-name)
-                   (file-name-nondirectory (buffer-file-name))
-                 (buffer-name)))
+    (setq file (rpm-spec--buffer-file-name))
     (cond
      ((eq (string-match "\\(.*\\)-\\([^-]*\\)-\\([^-]*\\).spec" file) 0)
       (setq name (match-string 1 file))
