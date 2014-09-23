@@ -247,7 +247,7 @@ value returned by function `user-mail-address'."
   'rpm-sections 'rpm-spec-sections)
 
 (defconst rpm-spec-sections
-  '("preamble" "description" "prep" "setup" "build" "install" "check" "clean"
+  '("preamble" "description" "prep" "build" "install" "check" "clean"
     "changelog" "files")
   "Partial list of section names.")
 
@@ -255,7 +255,7 @@ value returned by function `user-mail-address'."
   'rpm-section-list 'rpm-spec-section-list)
 
 (defvar rpm-spec-section-list
-  '(("preamble") ("description") ("prep") ("setup") ("build") ("install")
+  '(("preamble") ("description") ("prep") ("build") ("install")
     ("check") ("clean") ("changelog") ("files"))
   "Partial list of section names.")
 
